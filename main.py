@@ -2,6 +2,7 @@ import telebot
 from telebot import types
 import sqlite3
 import requests
+import json
 
 
 bot=telebot.TeleBot("6512031081:AAEy399DyqGCErprXJ0y-xL3uWkAb3YPpoI")
@@ -65,10 +66,29 @@ def callback(call):
 def weather(message):
     bot.send_message(message.chat.id, "Введите название города для показа погоды!")
 
+
 @bot.message_handler(content_types=['text'])
 def send_weather(message):
-    city=message.text.strip()
-    res = requests.get(f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}&units=metric')
-    bot.reply_to(message, f' Сейчас погода: {res.json()}')
+    try:
+        city=message.text.strip()
+        res = requests.get(f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API}&units=metric')
+
+        data = json.loads(res.text)
+        link_temp=""
+        if data['main']['temp']>=30:
+            link_temp+="30m.jpg"
+        elif data['main']['temp']<30 and data['main']['temp']>=10:
+            link_temp+="20.jpg"
+        elif data['main']['temp']<10 and data['main']['temp']> (-10):
+            link_temp+="0.jpg"
+        elif data['main']['temp']<= -10 and data['main']['temp']>= -20:
+            link_temp+="m10.jpg"
+        elif data['main']['temp']<= -20:
+            link_temp+="20m.jpg"
+        file=open(link_temp, 'rb')
+        bot.reply_to(message, f' Сейчас погода: {data["main"]["temp"]}С \n Ощущается на: {data["main"]["feels_like"]}C\n')
+        bot.send_photo(message.chat.id, file)
+    except:
+         bot.send_message(message.chat.id, f"Вы неправильно ввели название города!")
 
 bot.infinity_polling()
